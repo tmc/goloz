@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package goloz.v1;
+
+option go_package = "github.com/tmc/goloz/gen/proto/goloz/v1";
+
+message Position {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message SyncRequest {
+  Character character = 1;
+}
+
+message Character {
+  Position pos = 1;
+  int32 sprite_index = 2; // TODO: consider an enum
+}
+
+message SyncResponse {
+  map<string, Character> characters = 1;
+}
+
+service GameServerService {
+  rpc Sync(stream SyncRequest) returns (stream SyncResponse) {}
+}

@@ -1,4 +1,4 @@
-package main
+package goloz
 
 type Character struct {
 	X, Y        int
