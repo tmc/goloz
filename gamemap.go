@@ -1,4 +1,4 @@
-package main
+package goloz
 
 type GameMap struct {
 	X, Y        int
