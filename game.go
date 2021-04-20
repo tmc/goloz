@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -53,6 +54,7 @@ func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) *G
 }
 
 func (g *Game) Update() error {
+	defer timeit("update")()
 	g.frame++
 	changed := false
 
@@ -112,7 +114,20 @@ func (g *Game) Update() error {
 	return nil
 }
 
+func timeit(label string) func() {
+	min := 5 * time.Millisecond
+	t1 := time.Now()
+	return func() {
+
+		delta := time.Now().Sub(t1)
+		if delta > min {
+			fmt.Printf("timeit: %v %v\n", label, delta)
+		}
+	}
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
+	defer timeit("draw")()
 	screen.Fill(color.RGBA{g.bgColor.r, g.bgColor.g, g.bgColor.b, 0xff})
 
 	g.drawMap(screen)
@@ -120,7 +135,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawCharacters(screen)
 	ebitenutil.DebugPrint(screen, fmt.Sprintf(
 		"(%v,%v) sprite:%v",
-		g.character.Pos.X, g.character.Pos.Y,
+		ebiten.CurrentFPS(), ebiten.CurrentTPS(),
 		g.character.SpriteIndex))
 }
 
@@ -136,8 +151,13 @@ func (g *Game) drawCharacter(screen *ebiten.Image) {
 }
 
 func (g *Game) drawCharacters(screen *ebiten.Image) {
+	defer timeit("drawchars")()
+	localChars := map[string]*pb.Character{}
 	g.mu.RLock()
-	defer g.mu.RUnlock()
+	for k, v := range g.characters {
+		localChars[k] = v
+	}
+	g.mu.RUnlock()
 	for key, character := range g.characters {
 		// TODO: filter out self
 		op := &ebiten.DrawImageOptions{}
@@ -173,7 +193,7 @@ func (g *Game) RunNetworkSync(ctx context.Context, identity string) {
 			log.Println("syncClient error:", err)
 			continue
 		}
-		log.Println(m)
+		// log.Println(m)
 
 		for key, character := range m.Characters {
 			if key == identity {
