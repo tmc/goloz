@@ -13,65 +13,73 @@ import (
 var assetFS embed.FS
 
 var (
-	assetsCharacter *ebiten.Image
-	assetsMap       *ebiten.Image
+	assets map[string][]*ebiten.Image
 )
 
-func characterAsset(index int) (*ebiten.Image, error) {
+func characterAsset(index int) *ebiten.Image {
+	if index > len(assets["character0"])-1 {
+		index = len(assets["character0"]) - 1
+	}
+	return assets["character0"][index]
+}
+
+func loadCharacterAssets() error {
 	f, err := assetFS.Open("assets/character0alpha.png")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	img, _, err := image.Decode(f)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	rgba, ok := img.(*image.NRGBA)
 	if !ok {
-		return nil, fmt.Errorf("characterAsset: not rgba")
+		return fmt.Errorf("loadCharacterAssets: not rgba")
 	}
-	return ebiten.NewImageFromImage(rgba.SubImage([]image.Rectangle{
-		{
-			Min: image.Point{1, 3},
-			Max: image.Point{17, 27},
-		},
-		{
-			Min: image.Point{19, 3},
-			Max: image.Point{35, 27},
-		},
-	}[index])), err
+	spriteIndices := []image.Rectangle{
+		{Min: image.Point{1, 3}, Max: image.Point{17, 27}},
+		{Min: image.Point{19, 3}, Max: image.Point{35, 27}},
+	}
+	assets["character0"] = make([]*ebiten.Image, len(spriteIndices))
+	for i, rect := range spriteIndices {
+		assets["character0"][i] = ebiten.NewImageFromImage(rgba.SubImage(rect))
+	}
+	return nil
 }
 
-func mapAsset(index int) (*ebiten.Image, error) {
+func loadMapAssets() error {
 	f, err := assetFS.Open("assets/map0.png")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	img, _, err := image.Decode(f)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	rgba, ok := img.(*image.Paletted)
 	if !ok {
-		return nil, fmt.Errorf("mapAsset: not rgba")
+		return fmt.Errorf("mapAsset: not rgba")
 	}
-	return ebiten.NewImageFromImage(rgba), nil
-	/*
-		return ebiten.NewImageFromImage(rgba.SubImage([]image.Rectangle{
-			{
-				Min: image.Point{0, 0},
-				Max: image.Point{3020, 3020},
-			},
-		}[index])), nil
-	*/
+	// TODO: expand this to support more maps
+	assets["map0"] = []*ebiten.Image{
+		ebiten.NewImageFromImage(rgba),
+	}
+	return nil
+}
+
+func mapAsset(index int) *ebiten.Image {
+	if index > len(assets["map0"])-1 {
+		index = len(assets["map0"]) - 1
+	}
+	return assets["map0"][index]
 }
 
 func loadAssets() error {
-	var err error
-	if assetsCharacter, err = characterAsset(0); err != nil {
+	assets = make(map[string][]*ebiten.Image)
+	if err := loadCharacterAssets(); err != nil {
 		return err
 	}
-	if assetsMap, err = mapAsset(0); err != nil {
+	if err := loadMapAssets(); err != nil {
 		return err
 	}
 	return nil

@@ -134,8 +134,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawCharacter(screen)
 	g.drawCharacters(screen)
 	ebitenutil.DebugPrint(screen, fmt.Sprintf(
-		"(%v,%v) sprite:%v",
-		ebiten.CurrentFPS(), ebiten.CurrentTPS(),
+		"(tps: %.1f,fps:%.1f) sprite:%v",
+		ebiten.CurrentTPS(), ebiten.CurrentFPS(),
 		g.character.SpriteIndex))
 }
 
@@ -143,10 +143,7 @@ func (g *Game) drawCharacter(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(g.character.Pos.X), float64(g.character.Pos.Y))
 	op.GeoM.Scale(1, 1)
-	img, err := characterAsset(int(g.character.SpriteIndex))
-	if err != nil {
-		log.Fatal(err)
-	}
+	img := characterAsset(int(g.character.SpriteIndex))
 	screen.DrawImage(img, op)
 }
 
@@ -163,10 +160,7 @@ func (g *Game) drawCharacters(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(character.GetPos().X), float64(character.GetPos().Y))
 		op.GeoM.Scale(1, 1)
-		img, err := characterAsset(int(character.SpriteIndex))
-		if err != nil {
-			log.Fatal(err)
-		}
+		img := characterAsset(int(character.SpriteIndex))
 		ebitenutil.DebugPrintAt(screen, key, int(character.GetPos().X)+25, int(character.GetPos().Y))
 		screen.DrawImage(img, op)
 	}
@@ -176,7 +170,7 @@ func (g *Game) drawMap(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(-1*g.gameMap.X), float64(-1*g.gameMap.Y))
 	op.GeoM.Scale(1, 1)
-	screen.DrawImage(assetsMap, op)
+	screen.DrawImage(mapAsset(0), op)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
