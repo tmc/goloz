@@ -1,6 +1,7 @@
 package goloz
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"image/color"
@@ -10,6 +11,8 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	pb "github.com/tmc/goloz/proto/goloz/v1"
 )
@@ -23,6 +26,9 @@ type Game struct {
 		b uint8
 	}
 
+	audioContext *audio.Context
+	audioPlayer  *audio.Player
+
 	character *pb.Character
 	gameMap   GameMap
 
@@ -32,7 +38,7 @@ type Game struct {
 	characters map[string]*pb.Character
 }
 
-func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) *Game {
+func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) (*Game, error) {
 	g := &Game{
 		syncClient: syncClient,
 		characters: make(map[string]*pb.Character),
@@ -47,14 +53,35 @@ func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) *G
 			Y: 3827,
 		},
 	}
-	if err := loadAssets(); err != nil {
-		log.Fatal(err)
+
+	// TODO: separate audio initialization.
+	sampleRate := 44100
+	g.audioContext = audio.NewContext(sampleRate)
+	startupAudio, err := assetFS.ReadFile("assets/audio/title.mp3")
+	if err != nil {
+		return nil, err
 	}
-	return g
+	d, err := mp3.Decode(g.audioContext, bytes.NewReader(startupAudio))
+	if err != nil {
+		return nil, err
+	}
+	// Create an audio.Player that has one stream.
+	g.audioPlayer, err = audio.NewPlayer(g.audioContext, d)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := loadAssets(); err != nil {
+		return nil, err
+	}
+	return g, nil
 }
 
 func (g *Game) Update() error {
-	defer timeit("update")()
+	if g.frame == 0 {
+		g.audioPlayer.Play()
+	}
+
 	g.frame++
 	changed := false
 

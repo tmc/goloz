@@ -48,7 +48,10 @@ func runClient(cfg RunConfig) {
 		syncClient, err = establishServerSync(ctx, cfg, conn)
 	}
 	// Create the Game.
-	g := goloz.NewGame(ctx, syncClient)
+	g, err := goloz.NewGame(ctx, syncClient)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if !cfg.LocalOnly {
 		go g.RunNetworkSync(ctx, cfg.UserIdentity)
