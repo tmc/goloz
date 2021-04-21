@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	var flagConnect = flag.String("connect", "goloz-gameserver-kblm3ew5ta-uc.a.run.app:443", "server address")
+	var flagConnect = flag.String("connect", "golozd-1.tmc.dev:443", "server address")
 	var flagUserName = flag.String("username", "", "username")
 	var flagInsecure = flag.Bool("insecure", false, "username")
 	var flagLocalOnly = flag.Bool("local", false, "if true, only run in local mode")
