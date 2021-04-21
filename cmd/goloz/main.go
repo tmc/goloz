@@ -20,21 +20,59 @@ func main() {
 	var flagConnect = flag.String("connect", "goloz-gameserver-kblm3ew5ta-uc.a.run.app:443", "server address")
 	var flagUserName = flag.String("username", "", "username")
 	var flagInsecure = flag.Bool("insecure", false, "username")
+	var flagLocalOnly = flag.Bool("local", false, "if true, only run in local mode")
 	flag.Parse()
 
-	runClient(*flagConnect, userIdentity(*flagUserName), *flagInsecure)
+	runClient(RunConfig{
+		ServerAddr:   *flagConnect,
+		UserIdentity: resolveUserIdentity(*flagUserName),
+		Insecure:     *flagInsecure,
+		LocalOnly:    *flagLocalOnly,
+	})
 }
 
-func runClient(serverAddr string, userIdentity string, insecure bool) {
+func runClient(cfg RunConfig) {
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowTitle("goloz")
 
-	fmt.Println("dialing", serverAddr)
+	ctx := context.Background()
+	var syncClient pb.GameServerService_SyncClient
 
+	// If in remote mode, create a connection to the server.
+	if !cfg.LocalOnly {
+		conn, err := dialRemoteServer(cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+		syncClient, err = establishServerSync(ctx, cfg, conn)
+	}
+	// Create the Game.
+	g := goloz.NewGame(ctx, syncClient)
+
+	if !cfg.LocalOnly {
+		go g.RunNetworkSync(ctx, cfg.UserIdentity)
+	}
+	if err := ebiten.RunGame(g); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func resolveUserIdentity(explicitUsername string) string {
+	if explicitUsername != "" {
+		return explicitUsername
+	}
+	hostname, _ := os.Hostname()
+	pid := os.Getpid()
+	return fmt.Sprintf("%v:%v", hostname, pid)
+}
+
+func dialRemoteServer(cfg RunConfig) (*grpc.ClientConn, error) {
+	fmt.Println("dialing", cfg.ServerAddr)
 	dialOpts := []grpc.DialOption{
 		grpc.WithBlock(),
 	}
-	if insecure {
+	if cfg.Insecure {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	} else {
 		creds := credentials.NewTLS(&tls.Config{
@@ -43,37 +81,14 @@ func runClient(serverAddr string, userIdentity string, insecure bool) {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
 	}
 
-	conn, err := grpc.Dial(serverAddr, dialOpts...)
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-
-	fmt.Println("connected")
-	ctx := context.Background()
-	client := pb.NewGameServerServiceClient(conn)
-	ctx = metadata.AppendToOutgoingContext(ctx,
-		"id", userIdentity,
-	)
-	fmt.Println("syncing as", userIdentity)
-	syncClient, err := client.Sync(ctx)
-	if err != nil {
-		log.Println(err)
-	}
-	// Contact the server and print out its response.
-	g := goloz.NewGame(ctx, syncClient)
-
-	go g.RunNetworkSync(ctx, userIdentity)
-	if err := ebiten.RunGame(g); err != nil {
-		log.Fatal(err)
-	}
+	return grpc.Dial(cfg.ServerAddr, dialOpts...)
 }
 
-func userIdentity(explicitUsername string) string {
-	if explicitUsername != "" {
-		return explicitUsername
-	}
-	hostname, _ := os.Hostname()
-	pid := os.Getpid()
-	return fmt.Sprintf("%v:%v", hostname, pid)
+func establishServerSync(ctx context.Context, cfg RunConfig, conn *grpc.ClientConn) (pb.GameServerService_SyncClient, error) {
+	fmt.Println("syncing as", cfg.UserIdentity)
+	client := pb.NewGameServerServiceClient(conn)
+	ctx = metadata.AppendToOutgoingContext(ctx,
+		"id", cfg.UserIdentity,
+	)
+	return client.Sync(ctx)
 }
