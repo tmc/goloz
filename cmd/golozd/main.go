@@ -16,7 +16,7 @@ import (
 
 var (
 	// port is the port that the server listens on.
-	port = ":50001"
+	port = "50001"
 )
 
 func main() {
@@ -99,10 +99,10 @@ func (server *server) Sync(stream pb.GameServerService_SyncServer) error {
 
 func runServer() {
 	if p := os.Getenv("PORT"); p != "" {
-		port = ":" + p
+		port = p
 	}
 	fmt.Println("listening on :" + port)
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
