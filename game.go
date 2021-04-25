@@ -44,8 +44,8 @@ func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) (*
 		characters: make(map[string]*pb.Character),
 		character: &pb.Character{
 			Pos: &pb.Position{
-				X: 1,
-				Y: 1,
+				X: 3,
+				Y: 3,
 			},
 		},
 		gameMap: GameMap{
@@ -110,8 +110,15 @@ func (g *Game) Update() error {
 	if g.character.SpriteIndex < 0 {
 		g.character.SpriteIndex = g.character.SpriteIndex * -1
 	}
-	if g.frame%20 == 0 {
-		g.character.SpriteIndex++
+	if ebiten.IsKeyPressed(ebiten.KeyLeftBracket) {
+		if g.frame%10 == 0 {
+			g.character.SpriteIndex--
+		}
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyRightBracket) {
+		if g.frame%10 == 0 {
+			g.character.SpriteIndex++
+		}
 	}
 
 	if changed && g.syncClient != nil {
