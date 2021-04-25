@@ -44,8 +44,8 @@ func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) (*
 		characters: make(map[string]*pb.Character),
 		character: &pb.Character{
 			Pos: &pb.Position{
-				X: 105,
-				Y: 74,
+				X: 1,
+				Y: 1,
 			},
 		},
 		gameMap: GameMap{
@@ -110,11 +110,11 @@ func (g *Game) Update() error {
 	if g.character.SpriteIndex < 0 {
 		g.character.SpriteIndex = g.character.SpriteIndex * -1
 	}
-	if g.character.SpriteIndex >= 2 {
-		g.character.SpriteIndex = 0
+	if g.frame%20 == 0 {
+		g.character.SpriteIndex++
 	}
 
-	if changed {
+	if changed && g.syncClient != nil {
 		err := g.syncClient.Send(&pb.SyncRequest{
 			Character: g.character,
 		})
@@ -169,7 +169,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 func (g *Game) drawCharacter(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(g.character.Pos.X), float64(g.character.Pos.Y))
-	op.GeoM.Scale(1, 1)
+	op.GeoM.Scale(3, 3)
 	img := characterAsset(int(g.character.SpriteIndex))
 	screen.DrawImage(img, op)
 }
