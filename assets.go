@@ -40,6 +40,7 @@ func loadCharacterAssets() error {
 	characterHeight := 22
 	points := []image.Point{
 		// TODO: tweak these to match the image.
+		// Row 1
 		{1, 3},
 		{19, 3},
 		{36, 3},
@@ -71,6 +72,12 @@ func loadCharacterAssets() error {
 		{484, 4},
 		{501, 5},
 		{519, 3},
+		// Row 2
+		{1, 32},
+		{18, 33},
+		{35, 34},
+		{52, 37},
+		{69, 34},
 	}
 	spriteIndices := []image.Rectangle{}
 	for _, point := range points {
