@@ -20,7 +20,7 @@ func main() {
 	var flagConnect = flag.String("connect", "golozd-1.tmc.dev:443", "server address")
 	var flagUserName = flag.String("username", "", "username")
 	var flagInsecure = flag.Bool("insecure", false, "username")
-	var flagLocalOnly = flag.Bool("local", false, "if true, only run in local mode")
+	var flagLocalOnly = flag.Bool("local", true, "if true, only run in local mode")
 	flag.Parse()
 
 	runClient(RunConfig{
@@ -34,6 +34,8 @@ func main() {
 func runClient(cfg RunConfig) {
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowTitle("goloz")
+	ebiten.SetInitFocused(false)
+	ebiten.SetWindowPosition(0, 0)
 
 	ctx := context.Background()
 	var syncClient pb.GameServerService_SyncClient
