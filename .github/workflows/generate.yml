@@ -15,7 +15,10 @@ jobs:
     - run: make deps
     - run: make generate
     - run: |
-        if $(git diff --quiet --exit-code --cached); then
+        git add docs
+        if $(git diff --quiet --exit-code); then
+          echo 'No changes detected.'
+        else
           echo 'Detected changed files: please regenerate'
           git diff --stat
           exit 1
