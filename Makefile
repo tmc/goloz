@@ -16,5 +16,5 @@ generate:
 
 .PHONY: build
 build:
-	GOOS=js GOARCH=wasm go build -o build/goloz.wasm github.com/tmc/goloz/cmd/goloz
-	cp $(shell go env GOROOT)/misc/wasm/wasm_exec.js ./build/
+	GOOS=js GOARCH=wasm go build -o docs/goloz.wasm github.com/tmc/goloz/cmd/goloz
+	cp $(shell go env GOROOT)/misc/wasm/wasm_exec.js ./docs/
