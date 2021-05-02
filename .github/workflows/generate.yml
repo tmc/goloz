@@ -15,7 +15,6 @@ jobs:
     - run: make deps
     - run: make generate
     - run: |
-        git add docs
         if $(git diff --quiet --exit-code); then
           echo 'No changes detected.'
         else
