@@ -6,7 +6,7 @@ on:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    name: Build
+    name: Check Generated Output
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-go@v2
