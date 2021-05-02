@@ -20,6 +20,9 @@ func characterAsset(index int) *ebiten.Image {
 	if index > len(assets["character0"])-1 {
 		index = index % len(assets["character0"])
 	}
+	if index < 0 {
+		index = index * -1
+	}
 	return assets["character0"][index]
 }
 
