@@ -43,10 +43,9 @@ func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) (*
 		syncClient: syncClient,
 		characters: make(map[string]*pb.Character),
 		character: &pb.Character{
-			SpriteIndex: 32,
 			Pos: &pb.Position{
-				X: 3,
-				Y: 3,
+				X: 20,
+				Y: 20,
 			},
 		},
 		gameMap: GameMap{
@@ -89,22 +88,28 @@ func (g *Game) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		changed = true
 		g.character.Pos.X--
+		if g.frame%5 == 0 {
+			g.character.SpriteIndex--
+		}
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
 		changed = true
 		g.character.Pos.X++
+		if g.frame%5 == 0 {
+			g.character.SpriteIndex++
+		}
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
 		changed = true
 		g.character.Pos.Y--
-		if g.frame%10 == 0 {
+		if g.frame%5 == 0 {
 			g.character.SpriteIndex--
 		}
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyDown) {
 		changed = true
 		g.character.Pos.Y++
-		if g.frame%10 == 0 {
+		if g.frame%5 == 0 {
 			g.character.SpriteIndex++
 		}
 	}
@@ -112,12 +117,12 @@ func (g *Game) Update() error {
 		g.character.SpriteIndex = g.character.SpriteIndex * -1
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyLeftBracket) {
-		if g.frame%10 == 0 {
+		if g.frame%5 == 0 {
 			g.character.SpriteIndex--
 		}
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRightBracket) {
-		if g.frame%10 == 0 {
+		if g.frame%5 == 0 {
 			g.character.SpriteIndex++
 		}
 	}
@@ -177,7 +182,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 func (g *Game) drawCharacter(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(g.character.Pos.X), float64(g.character.Pos.Y))
-	op.GeoM.Scale(3, 3)
 	img := characterAsset(int(g.character.SpriteIndex))
 	screen.DrawImage(img, op)
 }
