@@ -41,46 +41,22 @@ func loadCharacterAssets() error {
 	}
 	characterWidth := 16
 	characterHeight := 22
-	points := []image.Point{
-		// TODO: tweak these to match the image.
-		// Row 1
-		{1, 3},
-		{19, 3},
-		{36, 3},
-		{53, 1},
-		{70, 3},
-		{87, 3},
-		{104, 3},
-		{121, 2},
-		{138, 3},
-		{156, 3},
-		{173, 4},
-		{190, 5},
-		{207, 3},
-		{224, 4},
-		{241, 5},
-		{259, 4},
-		{276, 5},
-		{294, 6},
-		{311, 3},
-		{329, 5},
-		{346, 5},
-		{363, 5},
-		{382, 5},
-		{399, 5},
-		{416, 3},
-		{433, 4},
-		{450, 5},
-		{467, 3},
-		{484, 4},
-		{501, 5},
-		{519, 3},
-		// Row 2
-		{1, 32},
-		{18, 33},
-		{35, 34},
-		{52, 37},
-		{69, 34},
+
+	// this stores how many tiles/sprites exist per row for this asset.
+	assetsPerRow := []int{
+		15,
+		15,
+		15,
+	}
+	points := []image.Point{}
+	for row, j := range assetsPerRow {
+		for s := 0; s < j; s++ {
+			points = append(points,
+				image.Point{
+					1 + (s * 16),
+					1 + (row * 24),
+				})
+		}
 	}
 	spriteIndices := []image.Rectangle{}
 	for _, point := range points {
