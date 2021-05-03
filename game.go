@@ -43,6 +43,7 @@ func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) (*
 		syncClient: syncClient,
 		characters: make(map[string]*pb.Character),
 		character: &pb.Character{
+			SpriteIndex: 32,
 			Pos: &pb.Position{
 				X: 3,
 				Y: 3,
