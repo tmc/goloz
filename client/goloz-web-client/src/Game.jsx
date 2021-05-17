@@ -12,7 +12,7 @@ function Game(){
     error,
     data
   } = useWasm({
-    url: '/goloz.wasm',
+    url: './goloz.wasm',
     importObject: importObject,
   });
 
