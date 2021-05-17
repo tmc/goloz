@@ -2,5 +2,11 @@
   "name": "goloz-web-client",
   "version": "1.0.0",
   "main": "src/app.js",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-router-dom": "^5.2.0",
+    "react-wasm": "^1.0.1"
+  }
 }
