@@ -15,6 +15,7 @@ jobs:
     - run: git fetch
     - run: git checkout -t origin/build
     - run: git rebase master || (git rebase --abort && git reset --hard master)
+    - run: make deps
     - run: make build
     - run: |
         git add docs
