@@ -217,7 +217,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func (g *Game) RunNetworkSync(ctx context.Context, identity string) {
-	for {
+	for g.syncClient != nil {
 		m, err := g.syncClient.Recv()
 		if err == io.EOF {
 			break
