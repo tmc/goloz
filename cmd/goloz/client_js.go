@@ -17,7 +17,7 @@ func dialer(s string, dt time.Duration) (net.Conn, error) {
 }
 
 func dialRemoteServer(cfg RunConfig) (*grpc.ClientConn, error) {
-	addr := "ws://" + cfg.ServerAddr + "/ws"
+	addr := "wss://" + cfg.ServerAddr + "/ws"
 	fmt.Println("dialing", addr)
 	dialOpts := []grpc.DialOption{
 		grpc.WithBlock(),
