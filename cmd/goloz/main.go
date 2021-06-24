@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
@@ -12,15 +11,14 @@ import (
 	"github.com/tmc/goloz"
 	pb "github.com/tmc/goloz/proto/goloz/v1"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 )
 
 func main() {
 	var flagConnect = flag.String("connect", "golozd-1.tmc.dev:443", "server address")
 	var flagUserName = flag.String("username", "", "username")
-	var flagInsecure = flag.Bool("insecure", false, "username")
-	var flagLocalOnly = flag.Bool("local", true, "if true, only run in local mode")
+	var flagInsecure = flag.Bool("insecure", false, "if specified, allow insecure traffic")
+	var flagLocalOnly = flag.Bool("local", false, "if true, only run in local mode")
 	flag.Parse()
 
 	runClient(RunConfig{
@@ -46,8 +44,10 @@ func runClient(cfg RunConfig) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer conn.Close()
-		syncClient, err = establishServerSync(ctx, cfg, conn)
+		if conn != nil {
+			defer conn.Close()
+			syncClient, err = establishServerSync(ctx, cfg, conn)
+		}
 	}
 	// Create the Game.
 	g, err := goloz.NewGame(ctx, syncClient)
@@ -70,23 +70,6 @@ func resolveUserIdentity(explicitUsername string) string {
 	hostname, _ := os.Hostname()
 	pid := os.Getpid()
 	return fmt.Sprintf("%v:%v", hostname, pid)
-}
-
-func dialRemoteServer(cfg RunConfig) (*grpc.ClientConn, error) {
-	fmt.Println("dialing", cfg.ServerAddr)
-	dialOpts := []grpc.DialOption{
-		grpc.WithBlock(),
-	}
-	if cfg.Insecure {
-		dialOpts = append(dialOpts, grpc.WithInsecure())
-	} else {
-		creds := credentials.NewTLS(&tls.Config{
-			InsecureSkipVerify: true,
-		})
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
-	}
-
-	return grpc.Dial(cfg.ServerAddr, dialOpts...)
 }
 
 func establishServerSync(ctx context.Context, cfg RunConfig, conn *grpc.ClientConn) (pb.GameServerService_SyncClient, error) {
