@@ -122,7 +122,17 @@ func runServer() {
 			}
 		}
 	}()
-	if err := s.Serve(lis); err != nil {
+	l, err := ListenWS(lis, s)
+	/*
+		l, err := Listen(fmt.Sprintf(":%v", port))
+		if err != nil {
+			panic(err)
+		}
+		if err := s.Serve(l); err != nil {
+			fmt.Fprintln(os.Stderr, "issue serving on ws listener:", err)
+		}
+	*/
+	if err := s.Serve(l); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
