@@ -17,7 +17,11 @@ func dialer(s string, dt time.Duration) (net.Conn, error) {
 }
 
 func dialRemoteServer(cfg RunConfig) (*grpc.ClientConn, error) {
-	addr := "wss://" + cfg.ServerAddr + "/ws"
+	prefix := "wss://"
+	if cfg.Insecure {
+		prefix = "ws://"
+	}
+	addr := prefix + cfg.ServerAddr + "/ws"
 	fmt.Println("dialing", addr)
 	dialOpts := []grpc.DialOption{
 		grpc.WithBlock(),
