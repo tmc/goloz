@@ -114,6 +114,18 @@ func runServer() {
 	}
 	pb.RegisterGameServerServiceServer(s, srv)
 	go func() {
+		// pInt, _ := strconv.Atoi(port)
+		// pInt++
+		// l, err := Listen(fmt.Sprintf(":%d", pInt))
+		l, err := ListenWS(lis, s)
+		if err != nil {
+			panic(err)
+		}
+		if err := s.Serve(l); err != nil {
+			fmt.Fprintln(os.Stderr, "issue serving on ws listener:", err)
+		}
+	}()
+	go func() {
 		for {
 			if err := srv.FanOutUpdates(ctx); err != nil {
 				if err != nil {
@@ -122,17 +134,7 @@ func runServer() {
 			}
 		}
 	}()
-	l, err := ListenWS(lis, s)
-	/*
-		l, err := Listen(fmt.Sprintf(":%v", port))
-		if err != nil {
-			panic(err)
-		}
-		if err := s.Serve(l); err != nil {
-			fmt.Fprintln(os.Stderr, "issue serving on ws listener:", err)
-		}
-	*/
-	if err := s.Serve(l); err != nil {
+	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }

@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	var flagConnect = flag.String("connect", "golozd-1.tmc.dev:443", "server address")
+	var flagConnect = flag.String("connect", "localhost:50001", "server address")
 	// var flagConnectWs = flag.String("connect-ws", "ws://golozd-1.tmc.dev:443/ws", "server address")
 	var flagUserName = flag.String("username", "", "username")
 	var flagInsecure = flag.Bool("insecure", false, "if specified, allow insecure traffic")
