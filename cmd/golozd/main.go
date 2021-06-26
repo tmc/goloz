@@ -51,9 +51,7 @@ func newServer() (*server, error) {
 
 func (server *server) FanOutUpdates(ctx context.Context) error {
 	for {
-		fmt.Println("awaiting updates")
 		update := <-server.updates
-		fmt.Println("got update", update)
 
 		// TODO: fix race
 		for _, c := range server.clients {
@@ -116,7 +114,7 @@ func runServer() {
 	pb.RegisterGameServerServiceServer(s, srv)
 
 	m := cmux.New(lis)
-	grpcL := m.Match(cmux.HTTP2())
+	grpcL := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
 	httpL := m.Match(cmux.Any())
 
 	go func() {
