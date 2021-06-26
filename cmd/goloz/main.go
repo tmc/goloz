@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/tmc/goloz"
@@ -71,6 +72,7 @@ func resolveUserIdentity(explicitUsername string) string {
 	}
 	hostname, _ := os.Hostname()
 	pid := os.Getpid()
+	rand.Seed(time.Now().Unix())
 	if pid == -1 {
 		pid = rand.Intn(1000)
 	}
