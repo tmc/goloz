@@ -3,17 +3,25 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
+	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials"
 )
 
 func dialRemoteServer(cfg RunConfig) (*grpc.ClientConn, error) {
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, time.Second)
 	fmt.Println("dialing", cfg.ServerAddr)
 	dialOpts := []grpc.DialOption{
-		grpc.WithBlock(),
+		grpc.FailOnNonTempDialError(true),
+		grpc.WithConnectParams(grpc.ConnectParams{
+			Backoff: backoff.DefaultConfig,
+		}),
 	}
 	if cfg.Insecure {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
@@ -24,5 +32,5 @@ func dialRemoteServer(cfg RunConfig) (*grpc.ClientConn, error) {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
 	}
 
-	return grpc.Dial(cfg.ServerAddr, dialOpts...)
+	return grpc.DialContext(ctx, cfg.ServerAddr, dialOpts...)
 }

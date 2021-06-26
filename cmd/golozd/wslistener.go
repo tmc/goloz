@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strings"
 
 	"google.golang.org/grpc"
 	"nhooyr.io/websocket"
@@ -20,13 +19,11 @@ type wsListener struct {
 	grpcServer *grpc.Server
 }
 
-func ListenWS(lis net.Listener, grpcServer *grpc.Server) (net.Listener, error) {
+func ListenWS(lis net.Listener) (net.Listener, error) {
 	srv := wsListener{
 		stop: make(chan struct{}),
 		errc: make(chan error, 1),
 		conn: make(chan net.Conn),
-
-		grpcServer: grpcServer,
 	}
 	// TODO: support HTTPS
 	srv.h = &http.Server{
@@ -41,16 +38,11 @@ func ListenWS(lis net.Listener, grpcServer *grpc.Server) (net.Listener, error) {
 }
 
 func (w wsListener) ServeHTTP(wr http.ResponseWriter, r *http.Request) {
-	if r.ProtoMajor == 2 && !strings.HasPrefix(
-		r.Header.Get("Connection"), "Upgrade") {
-		w.grpcServer.ServeHTTP(wr, r)
-		return
-	} else {
-		w.ServeWebsocket(wr, r)
-	}
+	fmt.Println("wslisterner serve http")
+	w.serveWebsocket(wr, r)
 }
 
-func (w wsListener) ServeWebsocket(wr http.ResponseWriter, r *http.Request) {
+func (w wsListener) serveWebsocket(wr http.ResponseWriter, r *http.Request) {
 	c, err := websocket.Accept(wr, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true,
 	})

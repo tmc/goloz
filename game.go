@@ -224,6 +224,7 @@ func (g *Game) RunNetworkSync(ctx context.Context, identity string) {
 		}
 		if err != nil {
 			log.Println("syncClient error:", err)
+			time.Sleep(10 * time.Millisecond)
 			continue
 		}
 		// log.Println(m)
