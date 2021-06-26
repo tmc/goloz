@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/soheilhy/cmux"
 	pb "github.com/tmc/goloz/proto/goloz/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -113,18 +114,11 @@ func runServer() {
 		log.Fatal(err)
 	}
 	pb.RegisterGameServerServiceServer(s, srv)
-	go func() {
-		// pInt, _ := strconv.Atoi(port)
-		// pInt++
-		// l, err := Listen(fmt.Sprintf(":%d", pInt))
-		l, err := ListenWS(lis, s)
-		if err != nil {
-			panic(err)
-		}
-		if err := s.Serve(l); err != nil {
-			fmt.Fprintln(os.Stderr, "issue serving on ws listener:", err)
-		}
-	}()
+
+	m := cmux.New(lis)
+	grpcL := m.Match(cmux.HTTP2())
+	httpL := m.Match(cmux.Any())
+
 	go func() {
 		for {
 			if err := srv.FanOutUpdates(ctx); err != nil {
@@ -134,7 +128,23 @@ func runServer() {
 			}
 		}
 	}()
-	if err := s.Serve(lis); err != nil {
+	go func() {
+		l, err := ListenWS(httpL)
+		if err != nil {
+			panic(err)
+		}
+		if err := s.Serve(l); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	go func() {
+		if err := s.Serve(grpcL); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	if err := m.Serve(); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
