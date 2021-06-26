@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -70,6 +71,9 @@ func resolveUserIdentity(explicitUsername string) string {
 	}
 	hostname, _ := os.Hostname()
 	pid := os.Getpid()
+	if pid == -1 {
+		pid = rand.Intn(1000)
+	}
 	return fmt.Sprintf("%v:%v", hostname, pid)
 }
 
