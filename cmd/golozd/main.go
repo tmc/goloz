@@ -17,12 +17,13 @@ import (
 
 var (
 	// port is the port that the server listens on.
-	port = "50001"
+	flagListen = flag.String("listen", ":50001", "listen address")
 )
 
 func main() {
 	flag.Parse()
-	runServer()
+	ctx := context.Background()
+	runServer(ctx, *flagListen)
 }
 
 type characterUpdate struct {
@@ -96,16 +97,15 @@ func (server *server) Sync(stream pb.GameServerService_SyncServer) error {
 	// TODO: defer cleanup
 }
 
-func runServer() {
+func runServer(ctx context.Context, listenAddr string) {
 	if p := os.Getenv("PORT"); p != "" {
-		port = p
+		listenAddr = ":" + p
 	}
-	fmt.Println("listening on :" + port)
-	lis, err := net.Listen("tcp", ":"+port)
+	fmt.Println("listening on :" + listenAddr)
+	lis, err := net.Listen("tcp", ":"+listenAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	ctx := context.Background()
 	s := grpc.NewServer()
 	srv, err := newServer()
 	if err != nil {
