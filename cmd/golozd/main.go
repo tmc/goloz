@@ -12,6 +12,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/soheilhy/cmux"
+	"github.com/tmc/goloz/apidocs"
 	pb "github.com/tmc/goloz/proto/goloz/v1"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -127,8 +128,13 @@ func runServer(ctx context.Context, listenAddr string) {
 	if err := pb.RegisterGameServerServiceHandlerServer(ctx, gwMux, srv); err != nil {
 		log.Fatalf("failed to register with gateway handler: %v", err)
 	}
+	httpMux := http.NewServeMux()
+	//httpMux.Handle("/", gwMux)
+	//httpMux.Handle("/apidocs/", apidocs.Handler())
+	httpMux.Handle("/apidocs/", http.StripPrefix("apidocs", apidocs.Handler()))
+	httpMux.Handle("/", apidocs.Handler())
 	httpServer := &http.Server{
-		Handler: gwMux,
+		Handler: httpMux,
 	}
 
 	// Main game state distribution loop.
