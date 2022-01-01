@@ -3,6 +3,7 @@ deps: deps-go deps-yarn
 	go install github.com/bufbuild/buf/cmd/buf
 	go install github.com/evanw/esbuild/cmd/esbuild
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	go install google.golang.org/protobuf/cmd/protoc-gen-go
 
@@ -41,6 +42,7 @@ generate:
 	    --grpc-gateway_out=. \
 	    --grpc-gateway_opt=paths=source_relative \
 	    --grpc-gateway_opt=generate_unbound_methods=true \
+	    --openapiv2_out=. \
 	    proto/goloz/v1/goloz.proto
 
 .PHONY: build

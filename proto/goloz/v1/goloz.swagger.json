@@ -1,0 +1,84 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "proto/goloz/v1/goloz.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "GameServerService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Character": {
+      "type": "object",
+      "properties": {
+        "pos": {
+          "$ref": "#/definitions/v1Position"
+        },
+        "spriteIndex": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v1Position": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "y": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v1SyncResponse": {
+      "type": "object",
+      "properties": {
+        "characters": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1Character"
+          }
+        }
+      }
+    }
+  }
+}
