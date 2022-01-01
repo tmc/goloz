@@ -15,7 +15,50 @@
   "produces": [
     "application/json"
   ],
-  "paths": {},
+  "paths": {
+    "/goloz.v1.GameServerService/Sync": {
+      "post": {
+        "operationId": "GameServerService_Sync",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1SyncResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of v1SyncResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": " (streaming inputs)",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SyncRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GameServerService"
+        ]
+      }
+    }
+  },
   "definitions": {
     "protobufAny": {
       "type": "object",
@@ -66,6 +109,14 @@
         "y": {
           "type": "integer",
           "format": "int32"
+        }
+      }
+    },
+    "v1SyncRequest": {
+      "type": "object",
+      "properties": {
+        "character": {
+          "$ref": "#/definitions/v1Character"
         }
       }
     },

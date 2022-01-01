@@ -43,6 +43,7 @@ generate:
 	    --grpc-gateway_opt=paths=source_relative \
 	    --grpc-gateway_opt=generate_unbound_methods=true \
 	    --openapiv2_out=. \
+	    --openapiv2_opt=generate_unbound_methods=true \
 	    proto/goloz/v1/goloz.proto
 	cp proto/goloz/v1/goloz.swagger.json apidocs/swagger-ui/build/api.openapi.json
 	go generate ./...
