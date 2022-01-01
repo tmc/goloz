@@ -13,6 +13,10 @@ deps-go:
 deps-yarn:
 	@command -v yarn > /dev/null || echo 'You need yarn. See https://yarnpkg.com/getting-started/install'
 
+.PHONY: test
+test:
+	go test -v ./...
+
 .PHONY: dev
 dev:
 	sh -c 'cd client/goloz-web-client; yarn'
