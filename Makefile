@@ -1,9 +1,10 @@
 .PHONY: deps
 deps: deps-go deps-yarn
 	go install github.com/bufbuild/buf/cmd/buf
+	go install github.com/evanw/esbuild/cmd/esbuild
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	go install google.golang.org/protobuf/cmd/protoc-gen-go
-	go install github.com/evanw/esbuild/cmd/esbuild
 
 .PHONY: deps-go
 deps-go:
@@ -32,9 +33,15 @@ lint:
 
 .PHONY: generate
 generate:
-	buf protoc --go_out=. --go_opt=paths=source_relative \
-    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-	proto/goloz/v1/goloz.proto
+	buf protoc \
+	    --go_out=. \
+	    --go_opt=paths=source_relative \
+	    --go-grpc_out=. \
+	    --go-grpc_opt=paths=source_relative \
+	    --grpc-gateway_out=. \
+	    --grpc-gateway_opt=logtostderr=true \
+	    --grpc-gateway_opt=paths=source_relative \
+	    proto/goloz/v1/goloz.proto
 
 .PHONY: build
 build:

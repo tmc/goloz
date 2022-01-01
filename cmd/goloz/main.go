@@ -46,7 +46,7 @@ func runClient(cfg RunConfig, settings goloz.Settings) {
 	ebiten.SetWindowTitle("goloz")
 	ebiten.SetInitFocused(false)
 	ebiten.SetWindowFloating(true)
-	ebiten.SetWindowPosition(cfg.WindowIdx*w, 0)
+	ebiten.SetWindowPosition(0, cfg.WindowIdx*h)
 
 	ctx := context.Background()
 	var syncClient pb.GameServerService_SyncClient
@@ -60,6 +60,9 @@ func runClient(cfg RunConfig, settings goloz.Settings) {
 		if conn != nil {
 			defer conn.Close()
 			syncClient, err = establishServerSync(ctx, cfg, conn)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 	// Create the Game.
