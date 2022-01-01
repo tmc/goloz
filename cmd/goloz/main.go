@@ -29,14 +29,14 @@ func main() {
 	flag.Parse()
 
 	runClient(RunConfig{
-		ServerAddr:   *flagConnect,
-		UserIdentity: resolveUserIdentity(*flagUserName),
-		Insecure:     *flagInsecure,
-		LocalOnly:    *flagLocalOnly,
+		ServerAddr: *flagConnect,
+		Insecure:   *flagInsecure,
+		LocalOnly:  *flagLocalOnly,
 
 		WindowIdx: *flagWindowIdx,
 	}, goloz.Settings{
-		AudioMuted: *flagMuted,
+		UserIdentity: resolveUserIdentity(*flagUserName),
+		AudioMuted:   *flagMuted,
 	})
 }
 
@@ -46,11 +46,11 @@ func runClient(cfg RunConfig, settings goloz.Settings) {
 	ebiten.SetWindowTitle("goloz")
 	ebiten.SetInitFocused(false)
 	ebiten.SetWindowFloating(true)
-	ebiten.SetWindowPosition(0, cfg.WindowIdx*h)
+	ebiten.SetWindowPosition(50, cfg.WindowIdx*h)
 
 	ctx := context.Background()
-	var syncClient pb.GameServerService_SyncClient
 
+	var client pb.GameServerServiceClient
 	// If in remote mode, create a connection to the server.
 	if !cfg.LocalOnly {
 		conn, err := dialRemoteServer(cfg)
@@ -58,21 +58,21 @@ func runClient(cfg RunConfig, settings goloz.Settings) {
 			log.Fatal(err)
 		}
 		if conn != nil {
-			defer conn.Close()
-			syncClient, err = establishServerSync(ctx, cfg, conn)
-			if err != nil {
-				log.Fatal(err)
-			}
+			defer func() {
+				conn.Close()
+				fmt.Println("calling conn close")
+			}()
 		}
+		client = pb.NewGameServerServiceClient(conn)
 	}
 	// Create the Game.
-	g, err := goloz.NewGame(ctx, settings, syncClient)
+	g, err := goloz.NewGame(ctx, settings, client)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if !cfg.LocalOnly {
-		go g.RunNetworkSync(ctx, cfg.UserIdentity)
+		go g.RunNetworkSync(ctx)
 	}
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
@@ -92,11 +92,11 @@ func resolveUserIdentity(explicitUsername string) string {
 	return fmt.Sprintf("%v:%v", hostname, pid)
 }
 
-func establishServerSync(ctx context.Context, cfg RunConfig, conn *grpc.ClientConn) (pb.GameServerService_SyncClient, error) {
-	fmt.Println("syncing as", cfg.UserIdentity)
+func establishServerSync(ctx context.Context, settings goloz.Settings, conn *grpc.ClientConn) (pb.GameServerService_SyncClient, error) {
+	fmt.Println("syncing as", settings.UserIdentity)
 	client := pb.NewGameServerServiceClient(conn)
 	ctx = metadata.AppendToOutgoingContext(ctx,
-		"id", cfg.UserIdentity,
+		"id", settings.UserIdentity,
 	)
 	return client.Sync(ctx)
 }
