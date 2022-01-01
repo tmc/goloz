@@ -1,9 +1,11 @@
 .PHONY: deps
 deps: deps-go deps-yarn
-	go get github.com/bufbuild/buf/cmd/buf
-	go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
-	go get google.golang.org/protobuf/cmd/protoc-gen-go
-	go get github.com/evanw/esbuild/cmd/esbuild
+	go install github.com/bufbuild/buf/cmd/buf
+	go install github.com/evanw/esbuild/cmd/esbuild
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	go install google.golang.org/protobuf/cmd/protoc-gen-go
 
 .PHONY: deps-go
 deps-go:
@@ -12,6 +14,10 @@ deps-go:
 .PHONY: deps-yarn
 deps-yarn:
 	@command -v yarn > /dev/null || echo 'You need yarn. See https://yarnpkg.com/getting-started/install'
+
+.PHONY: test
+test:
+	go test -v ./...
 
 .PHONY: dev
 dev:
@@ -28,9 +34,19 @@ lint:
 
 .PHONY: generate
 generate:
-	buf protoc --go_out=. --go_opt=paths=source_relative \
-    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-	proto/goloz/v1/goloz.proto
+	buf protoc \
+	    --go_out=. \
+	    --go_opt=paths=source_relative \
+	    --go-grpc_out=. \
+	    --go-grpc_opt=paths=source_relative \
+	    --grpc-gateway_out=. \
+	    --grpc-gateway_opt=paths=source_relative \
+	    --grpc-gateway_opt=generate_unbound_methods=true \
+	    --openapiv2_out=. \
+	    --openapiv2_opt=generate_unbound_methods=true \
+	    proto/goloz/v1/goloz.proto
+	cp proto/goloz/v1/goloz.swagger.json apidocs/swagger-ui/build/api.openapi.json
+	go generate ./...
 
 .PHONY: build
 build:

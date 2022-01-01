@@ -7,22 +7,28 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
+	"strings"
 
-	"github.com/soheilhy/cmux"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/tmc/goloz/apidocs"
 	pb "github.com/tmc/goloz/proto/goloz/v1"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
 var (
 	// port is the port that the server listens on.
-	port = "50001"
+	flagListen = flag.String("listen", ":50001", "listen address")
 )
 
 func main() {
 	flag.Parse()
-	runServer()
+	ctx := context.Background()
+	runServer(ctx, *flagListen)
 }
 
 type characterUpdate struct {
@@ -96,53 +102,62 @@ func (server *server) Sync(stream pb.GameServerService_SyncServer) error {
 	// TODO: defer cleanup
 }
 
-func runServer() {
+func runServer(ctx context.Context, listenAddr string) {
 	if p := os.Getenv("PORT"); p != "" {
-		port = p
+		listenAddr = ":" + p
 	}
-	fmt.Println("listening on :" + port)
-	lis, err := net.Listen("tcp", ":"+port)
+	fmt.Println("listening on", listenAddr)
+	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	ctx := context.Background()
-	s := grpc.NewServer()
+	grpcServer := grpc.NewServer()
 	srv, err := newServer()
 	if err != nil {
 		log.Fatal(err)
 	}
-	pb.RegisterGameServerServiceServer(s, srv)
+	pb.RegisterGameServerServiceServer(grpcServer, srv)
 
-	m := cmux.New(lis)
-	grpcL := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
-	httpL := m.Match(cmux.Any())
+	gwMux := runtime.NewServeMux()
+	endpoint := fmt.Sprintf("localhost" + listenAddr) // TODO: this presumse listenAddr has no content before the colon which is not necessarily true.
+	opts := []grpc.DialOption{
+		grpc.WithInsecure(), // WithInsecure is fine as we should only be traversing loopback.
+	}
+	if err := pb.RegisterGameServerServiceHandlerFromEndpoint(ctx, gwMux, endpoint, opts); err != nil {
+		log.Fatalf("failed to register with gateway handler: %v", err)
+	}
+	httpMux := http.NewServeMux()
+	httpMux.Handle("/", gwMux)
+	//httpMux.Handle("/apidocs/", apidocs.Handler())
+	httpMux.Handle("/apidocs/", http.StripPrefix("/apidocs/", apidocs.Handler()))
 
+	mixedHandler := newHTTPandGRPCMux(httpMux, grpcServer)
+
+	http2Server := &http2.Server{}
+	httpServer := &http.Server{Handler: h2c.NewHandler(mixedHandler, http2Server)}
+
+	// Main game state distribution loop.
 	go func() {
 		for {
 			if err := srv.FanOutUpdates(ctx); err != nil {
 				if err != nil {
-					log.Println(err)
+					log.Fatalf("failed to start state server: %v", err)
 				}
 			}
 		}
 	}()
-	go func() {
-		l, err := ListenWS(httpL)
-		if err != nil {
-			panic(err)
-		}
-		if err := s.Serve(l); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-	}()
 
-	go func() {
-		if err := s.Serve(grpcL); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-	}()
-
-	if err := m.Serve(); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+	if err := httpServer.Serve(lis); err != nil {
+		log.Fatal(err)
 	}
+}
+
+func newHTTPandGRPCMux(httpHand http.Handler, grpcHandler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("content-type"), "application/grpc") {
+			grpcHandler.ServeHTTP(w, r)
+			return
+		}
+		httpHand.ServeHTTP(w, r)
+	})
 }

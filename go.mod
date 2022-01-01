@@ -3,12 +3,15 @@ module github.com/tmc/goloz
 go 1.16
 
 require (
-	github.com/bufbuild/buf v0.41.0
-	github.com/evanw/esbuild v0.11.23
+	github.com/bufbuild/buf v0.56.0
+	github.com/evanw/esbuild v0.14.10
+	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.2
 	github.com/hajimehoshi/ebiten/v2 v2.0.8
-	github.com/soheilhy/cmux v0.1.5
-	google.golang.org/grpc v1.37.0-dev.0.20210309003715-fce74a94bdff
-	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
-	google.golang.org/protobuf v1.26.0
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	golang.org/x/net v0.0.0-20210907225631-ff17edfbf26d
+	google.golang.org/grpc v1.43.0
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
+	google.golang.org/protobuf v1.27.1
 	nhooyr.io/websocket v1.8.7
 )
