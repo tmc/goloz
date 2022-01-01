@@ -11,6 +11,7 @@ import (
 
 	"github.com/soheilhy/cmux"
 	pb "github.com/tmc/goloz/proto/goloz/v1"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -106,16 +107,19 @@ func runServer(ctx context.Context, listenAddr string) {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	grpcServer := grpc.NewServer()
 	srv, err := newServer()
 	if err != nil {
 		log.Fatal(err)
 	}
-	pb.RegisterGameServerServiceServer(s, srv)
+	pb.RegisterGameServerServiceServer(grpcServer, srv)
 
-	m := cmux.New(lis)
-	grpcL := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
-	httpL := m.Match(cmux.Any())
+	mux := cmux.New(lis)
+
+	// Match connections in order:
+	// First grpc, then HTTP, and otherwise Go RPC/TCP.
+	httpListener := mux.Match(cmux.HTTP1Fast())
+	grpcListener := mux.Match(cmux.Any())
 
 	go func() {
 		for {
@@ -126,23 +130,33 @@ func runServer(ctx context.Context, listenAddr string) {
 			}
 		}
 	}()
-	go func() {
-		l, err := ListenWS(httpL)
-		if err != nil {
-			panic(err)
-		}
-		if err := s.Serve(l); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-	}()
 
-	go func() {
-		if err := s.Serve(grpcL); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-	}()
+	/*
+			go func() {
+				l, err := ListenWS(httpL)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Println("listening for websocket connections")
+				if err := s.Serve(l); err != nil {
+					log.Fatalf("failed to serve: %v", err)
+				}
+			}()
+		_ = httpL
+	*/
 
-	if err := m.Serve(); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	// go func() {
+	// if err := grpcServer.Serve(grpc); err != nil {
+	// 	log.Fatalf("failed to serve: %v", err)
+	// }
+	// }()
+
+	// if err := m.Serve(); err != nil {
+	// 	log.Fatalf("failed to serve: %v", err)
+	// }
+	group := errgroup.Group{}
+	group.Go(func() error { return httpServer.Serve(httpListener) })
+	group.Go(func() error { return grpcServer.Serve(grpcListener) })
+	group.Go(func() error { return mux.Serve() })
+	log.Fatal(group.Wait())
 }
