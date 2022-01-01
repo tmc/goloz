@@ -7,8 +7,10 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/soheilhy/cmux"
 	pb "github.com/tmc/goloz/proto/goloz/v1"
 	"golang.org/x/sync/errgroup"
@@ -121,42 +123,30 @@ func runServer(ctx context.Context, listenAddr string) {
 	httpListener := mux.Match(cmux.HTTP1Fast())
 	grpcListener := mux.Match(cmux.Any())
 
+	gwMux := runtime.NewServeMux()
+	if err := pb.RegisterGameServerServiceHandlerServer(ctx, gwMux, srv); err != nil {
+		log.Fatalf("failed to register with gateway handler: %v", err)
+	}
+	httpServer := &http.Server{
+		Handler: gwMux,
+	}
+
+	// Main game state distribution loop.
 	go func() {
 		for {
 			if err := srv.FanOutUpdates(ctx); err != nil {
 				if err != nil {
-					log.Println(err)
+					log.Fatalf("failed to start state server: %v", err)
 				}
 			}
 		}
 	}()
 
-	/*
-			go func() {
-				l, err := ListenWS(httpL)
-				if err != nil {
-					panic(err)
-				}
-				fmt.Println("listening for websocket connections")
-				if err := s.Serve(l); err != nil {
-					log.Fatalf("failed to serve: %v", err)
-				}
-			}()
-		_ = httpL
-	*/
-
-	// go func() {
-	// if err := grpcServer.Serve(grpc); err != nil {
-	// 	log.Fatalf("failed to serve: %v", err)
-	// }
-	// }()
-
-	// if err := m.Serve(); err != nil {
-	// 	log.Fatalf("failed to serve: %v", err)
-	// }
 	group := errgroup.Group{}
 	group.Go(func() error { return httpServer.Serve(httpListener) })
 	group.Go(func() error { return grpcServer.Serve(grpcListener) })
 	group.Go(func() error { return mux.Serve() })
-	log.Fatal(group.Wait())
+	if err := group.Wait(); err != nil {
+		log.Fatal(err)
+	}
 }
