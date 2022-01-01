@@ -1,9 +1,9 @@
 .PHONY: deps
 deps: deps-go deps-yarn
-	go get github.com/bufbuild/buf/cmd/buf
-	go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
-	go get google.golang.org/protobuf/cmd/protoc-gen-go
-	go get github.com/evanw/esbuild/cmd/esbuild
+	go install github.com/bufbuild/buf/cmd/buf
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	go install google.golang.org/protobuf/cmd/protoc-gen-go
+	go install github.com/evanw/esbuild/cmd/esbuild
 
 .PHONY: deps-go
 deps-go:
