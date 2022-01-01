@@ -102,7 +102,7 @@ func runServer(ctx context.Context, listenAddr string) {
 		listenAddr = ":" + p
 	}
 	fmt.Println("listening on :" + listenAddr)
-	lis, err := net.Listen("tcp", ":"+listenAddr)
+	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
