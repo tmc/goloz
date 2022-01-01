@@ -17,11 +17,15 @@ import (
 )
 
 func main() {
-	var flagConnect = flag.String("connect", "golozd-1.tmc.dev:443", "server address")
-	// var flagConnectWs = flag.String("connect-ws", "ws://golozd-1.tmc.dev:443/ws", "server address")
-	var flagUserName = flag.String("username", "", "username")
-	var flagInsecure = flag.Bool("insecure", false, "if specified, allow insecure traffic")
-	var flagLocalOnly = flag.Bool("local", false, "if true, only run in local mode")
+	var (
+		flagConnect = flag.String("connect", "golozd-1.tmc.dev:443", "server address")
+		// var flagConnectWs = flag.String("connect-ws", "ws://golozd-1.tmc.dev:443/ws", "server address")
+		flagUserName  = flag.String("username", "", "username")
+		flagInsecure  = flag.Bool("insecure", false, "if specified, allow insecure traffic")
+		flagLocalOnly = flag.Bool("local", false, "if true, only run in local mode")
+		flagWindowIdx = flag.Int("w", 0, "if specified, picks tiled window position")
+		flagMuted     = flag.Bool("muted", false, "if true, mutes audio output")
+	)
 	flag.Parse()
 
 	runClient(RunConfig{
@@ -29,14 +33,20 @@ func main() {
 		UserIdentity: resolveUserIdentity(*flagUserName),
 		Insecure:     *flagInsecure,
 		LocalOnly:    *flagLocalOnly,
+
+		WindowIdx: *flagWindowIdx,
+	}, goloz.Settings{
+		AudioMuted: *flagMuted,
 	})
 }
 
-func runClient(cfg RunConfig) {
-	ebiten.SetWindowSize(640, 480)
+func runClient(cfg RunConfig, settings goloz.Settings) {
+	w, h := 640, 480
+	ebiten.SetWindowSize(w, h)
 	ebiten.SetWindowTitle("goloz")
 	ebiten.SetInitFocused(false)
-	ebiten.SetWindowPosition(0, 0)
+	ebiten.SetWindowFloating(true)
+	ebiten.SetWindowPosition(cfg.WindowIdx*w, 0)
 
 	ctx := context.Background()
 	var syncClient pb.GameServerService_SyncClient
@@ -53,7 +63,7 @@ func runClient(cfg RunConfig) {
 		}
 	}
 	// Create the Game.
-	g, err := goloz.NewGame(ctx, syncClient)
+	g, err := goloz.NewGame(ctx, settings, syncClient)
 	if err != nil {
 		log.Fatal(err)
 	}

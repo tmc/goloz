@@ -6,4 +6,6 @@ type RunConfig struct {
 	UserIdentity string
 	Insecure     bool
 	LocalOnly    bool
+
+	WindowIdx int // optionally used to place initial windows differently.
 }
