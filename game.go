@@ -15,6 +15,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	pb "github.com/tmc/goloz/proto/goloz/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // Game holds the local game state.
@@ -34,6 +37,9 @@ type Game struct {
 	character *pb.Character
 	gameMap   GameMap
 
+	client pb.GameServerServiceClient
+
+	// sync stream
 	syncClient pb.GameServerService_SyncClient
 
 	mu         sync.RWMutex // protects the following
@@ -41,10 +47,10 @@ type Game struct {
 }
 
 // NewGame initializes a new Game.
-func NewGame(ctx context.Context, settings Settings, syncClient pb.GameServerService_SyncClient) (*Game, error) {
+func NewGame(ctx context.Context, settings Settings, client pb.GameServerServiceClient) (*Game, error) {
 	g := &Game{
 		settings:   settings,
-		syncClient: syncClient,
+		client:     client,
 		characters: make(map[string]*pb.Character),
 		character: &pb.Character{
 			Pos: &pb.Position{
@@ -221,21 +227,44 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 	return 320, 240
 }
 
-func (g *Game) RunNetworkSync(ctx context.Context, identity string) {
-	for g.syncClient != nil {
-		m, err := g.syncClient.Recv()
+func (g *Game) RunNetworkSync(ctx context.Context) {
+	fmt.Println("syncing as", g.settings.UserIdentity)
+	ctx = metadata.AppendToOutgoingContext(ctx,
+		"id", g.settings.UserIdentity,
+	)
+	delay := time.Second
+	for {
+		// set up syncClient
+		var err error
+		g.syncClient, err = g.client.Sync(ctx)
+		if err != nil {
+			fmt.Println("issue obtaining sync stream:", err)
+			time.Sleep(delay)
+			continue
+		}
+		g.runNetworkSync(ctx, g.syncClient)
+	}
+}
+
+func (g *Game) runNetworkSync(ctx context.Context, syncClient pb.GameServerService_SyncClient) {
+	for {
+		m, err := syncClient.Recv()
 		if err == io.EOF {
+			break
+		}
+		if status.Code(err) == codes.Internal {
+			log.Println("syncClient internal error:", err)
+			time.Sleep(100 * time.Millisecond)
 			break
 		}
 		if err != nil {
 			log.Println("syncClient error:", err)
 			time.Sleep(100 * time.Millisecond)
-			continue
+			break
 		}
-		// log.Println(m)
 
 		for key, character := range m.Characters {
-			if key == identity {
+			if key == g.settings.UserIdentity {
 				continue
 			}
 			g.mu.Lock()
@@ -243,5 +272,4 @@ func (g *Game) RunNetworkSync(ctx context.Context, identity string) {
 			g.mu.Unlock()
 		}
 	}
-
 }

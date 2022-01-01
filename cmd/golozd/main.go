@@ -9,12 +9,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/soheilhy/cmux"
 	"github.com/tmc/goloz/apidocs"
 	pb "github.com/tmc/goloz/proto/goloz/v1"
-	"golang.org/x/sync/errgroup"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -117,13 +118,6 @@ func runServer(ctx context.Context, listenAddr string) {
 	}
 	pb.RegisterGameServerServiceServer(grpcServer, srv)
 
-	mux := cmux.New(lis)
-
-	// Match connections in order:
-	// First grpc, then HTTP, and otherwise Go RPC/TCP.
-	httpListener := mux.Match(cmux.HTTP1Fast())
-	grpcListener := mux.Match(cmux.Any())
-
 	gwMux := runtime.NewServeMux()
 	endpoint := fmt.Sprintf("localhost" + listenAddr) // TODO: this presumse listenAddr has no content before the colon which is not necessarily true.
 	opts := []grpc.DialOption{
@@ -136,9 +130,11 @@ func runServer(ctx context.Context, listenAddr string) {
 	httpMux.Handle("/", gwMux)
 	//httpMux.Handle("/apidocs/", apidocs.Handler())
 	httpMux.Handle("/apidocs/", http.StripPrefix("/apidocs/", apidocs.Handler()))
-	httpServer := &http.Server{
-		Handler: httpMux,
-	}
+
+	mixedHandler := newHTTPandGRPCMux(httpMux, grpcServer)
+
+	http2Server := &http2.Server{}
+	httpServer := &http.Server{Handler: h2c.NewHandler(mixedHandler, http2Server)}
 
 	// Main game state distribution loop.
 	go func() {
@@ -151,11 +147,17 @@ func runServer(ctx context.Context, listenAddr string) {
 		}
 	}()
 
-	group := errgroup.Group{}
-	group.Go(func() error { return httpServer.Serve(httpListener) })
-	group.Go(func() error { return grpcServer.Serve(grpcListener) })
-	group.Go(func() error { return mux.Serve() })
-	if err := group.Wait(); err != nil {
+	if err := httpServer.Serve(lis); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func newHTTPandGRPCMux(httpHand http.Handler, grpcHandler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("content-type"), "application/grpc") {
+			grpcHandler.ServeHTTP(w, r)
+			return
+		}
+		httpHand.ServeHTTP(w, r)
+	})
 }
