@@ -129,10 +129,9 @@ func runServer(ctx context.Context, listenAddr string) {
 		log.Fatalf("failed to register with gateway handler: %v", err)
 	}
 	httpMux := http.NewServeMux()
-	//httpMux.Handle("/", gwMux)
+	httpMux.Handle("/", gwMux)
 	//httpMux.Handle("/apidocs/", apidocs.Handler())
-	httpMux.Handle("/apidocs/", http.StripPrefix("apidocs", apidocs.Handler()))
-	httpMux.Handle("/", apidocs.Handler())
+	httpMux.Handle("/apidocs/", http.StripPrefix("/apidocs/", apidocs.Handler()))
 	httpServer := &http.Server{
 		Handler: httpMux,
 	}
