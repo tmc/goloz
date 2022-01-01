@@ -38,7 +38,7 @@ func ListenWS(lis net.Listener) (net.Listener, error) {
 }
 
 func (w wsListener) ServeHTTP(wr http.ResponseWriter, r *http.Request) {
-	fmt.Println("wslisterner serve http")
+	fmt.Println("wslistener serve http")
 	w.serveWebsocket(wr, r)
 }
 

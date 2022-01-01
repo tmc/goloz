@@ -15,7 +15,8 @@ import (
 
 func dialRemoteServer(cfg RunConfig) (*grpc.ClientConn, error) {
 	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
 	fmt.Println("dialing", cfg.ServerAddr)
 	dialOpts := []grpc.DialOption{
 		grpc.FailOnNonTempDialError(true),

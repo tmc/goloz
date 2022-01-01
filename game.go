@@ -19,6 +19,8 @@ import (
 
 // Game holds the local game state.
 type Game struct {
+	settings Settings
+
 	frame   int
 	bgColor struct {
 		r uint8
@@ -38,8 +40,10 @@ type Game struct {
 	characters map[string]*pb.Character
 }
 
-func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) (*Game, error) {
+// NewGame initializes a new Game.
+func NewGame(ctx context.Context, settings Settings, syncClient pb.GameServerService_SyncClient) (*Game, error) {
 	g := &Game{
+		settings:   settings,
 		syncClient: syncClient,
 		characters: make(map[string]*pb.Character),
 		character: &pb.Character{
@@ -78,7 +82,8 @@ func NewGame(ctx context.Context, syncClient pb.GameServerService_SyncClient) (*
 }
 
 func (g *Game) Update() error {
-	if g.frame == 0 {
+	// TODO: audioPlayer should be renamed to something like startupAudioPlayer.
+	if g.frame == 0 && g.settings.AudioMuted == false {
 		g.audioPlayer.Play()
 	}
 
