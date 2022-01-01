@@ -125,7 +125,11 @@ func runServer(ctx context.Context, listenAddr string) {
 	grpcListener := mux.Match(cmux.Any())
 
 	gwMux := runtime.NewServeMux()
-	if err := pb.RegisterGameServerServiceHandlerServer(ctx, gwMux, srv); err != nil {
+	endpoint := fmt.Sprintf("localhost" + listenAddr) // TODO: this presumse listenAddr has no content before the colon which is not necessarily true.
+	opts := []grpc.DialOption{
+		grpc.WithInsecure(), // WithInsecure is fine as we should only be traversing loopback.
+	}
+	if err := pb.RegisterGameServerServiceHandlerFromEndpoint(ctx, gwMux, endpoint, opts); err != nil {
 		log.Fatalf("failed to register with gateway handler: %v", err)
 	}
 	httpMux := http.NewServeMux()
